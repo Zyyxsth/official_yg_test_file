@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<launch>
+  <node pkg="read_pcd" name="read_pcd" type="read_pcd" output="screen">
+
+	  <!-- <param name="map/map_file" value="$(find read_pcd)/PCDFiles/GlobalMap.pcd"/> -->
+	  
+	  <!-- <param name="map/map_file" value="$(find read_pcd)/PCDFiles/629_905_2.pcd"/>   -->
+	  <param name="map/map_file" value="$(find read_pcd)/PCDFiles/outside_0812.pcd"/> 
+	  <param name="map/map_file2" value="$(find read_pcd)/PCDFiles/629_1219_2.pcd"/> 
+	</node>
+</launch>

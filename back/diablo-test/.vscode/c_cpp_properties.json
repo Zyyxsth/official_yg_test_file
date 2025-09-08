@@ -1,0 +1,30 @@
+{
+  "configurations": [
+    {
+      "browse": {
+        "databaseFilename": "${default}",
+        "limitSymbolsToIncludedHeaders": false
+      },
+      "includePath": [
+        "/home/hilab/3D2M-planner/planner/devel/include/**",
+        "/opt/ros/noetic/include/**",
+        "/home/hilab/3D2M-planner/planner/src/diablo-test/diablo_ception/diablo_body/include/**",
+        "/home/hilab/3D2M-planner/planner/src/diablo-test/diablo_ctrl/include/**",
+        "/home/hilab/3D2M-planner/planner/src/diablo-test/diablo_utils/include/**",
+        "/home/hilab/3D2M-planner/planner/src/fake_diablo/include/**",
+        "/home/hilab/3D2M-planner/planner/src/FASTLIO2_SAM_LC/include/**",
+        "/home/hilab/3D2M-planner/planner/src/map_manager/include/**",
+        "/home/hilab/3D2M-planner/planner/src/mpc/include/**",
+        "/home/hilab/3D2M-planner/planner/src/planner_algorithm/include/**",
+        "/home/hilab/3D2M-planner/planner/src/planner_manager/include/**",
+        "/usr/include/**"
+      ],
+      "name": "ROS",
+      "intelliSenseMode": "gcc-arm64",
+      "compilerPath": "/usr/bin/gcc",
+      "cStandard": "gnu11",
+      "cppStandard": "c++14"
+    }
+  ],
+  "version": 4
+}

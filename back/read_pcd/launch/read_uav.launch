@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<launch>
+  <node pkg="read_pcd" name="read_pcd" type="read_pcd" output="screen">
+
+	  <!-- <param name="map/map_file" value="$(find read_pcd)/PCDFiles/GlobalMap.pcd"/> -->
+	  
+	  <param name="map/map_file" value="$(find read_pcd)/PCDFiles/MANIFOLD_20240919115632-Cloud.pcd"/>  <!-- after_pro_629    629_905_2   MANIFOLD_20240919115632-Cloud-->
+	  
+	  
+	  
+	</node>
+</launch>

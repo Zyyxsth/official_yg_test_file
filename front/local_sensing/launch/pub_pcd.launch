@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<launch>
+    <node pkg="laser_simulator" type="read_pcd_node" name="read_pcd_node" output="screen">
+        <param name="pc_resolution" value="0.2" type="double"/>
+        <param name="pcd_load_path" value="/home/zyyxsth/wheelleg3/src/readmap/src/read_pcd/scans.pcd" type="string"/>
+        <param name="pcd_save_path" value="/home/zyyxsth/wheelleg3/src/readmap/src/read_pcd/scans.pcd" type="string"/>
+        <param name="do_filter" value="false" type="bool"/>
+        <param name="do_save" value="false" type="bool"/>
+
+        <remap from="~global_map" to="/global_map"/>
+    </node>
+</launch>
