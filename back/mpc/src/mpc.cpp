@@ -1,4 +1,6 @@
 #include "mpc.h"
+#include <nav_msgs/Path.h>
+
  
 using namespace std;
  
@@ -30,7 +32,7 @@ void MPC::init(ros::NodeHandle &nh)
     max_cv = max_accel * dt;
     xref = Eigen::Matrix<double, 4, 500>::Zero(4, 500);
     last_output = output = dref = Eigen::Matrix<double, 2, 500>::Zero(2, 500);
-    cmd.height = 0.7;
+    cmd.height = 1.0;
     cmd.height_vel = 0.0;
     cmd.omega = 0.0;
     cmd.pitch = 0.0;
@@ -45,6 +47,8 @@ void MPC::init(ros::NodeHandle &nh)
     cmd_timer_ = nh.createTimer(ros::Duration(0.01), &MPC::cmdCallback, this);
     odom_sub_ = nh.subscribe("odom", 1, &MPC::rcvOdomCallBack, this);
     traj_sub_ = nh.subscribe("traj", 1, &MPC::rcvTrajCallBack, this);
+    path_pub_ = nh.advertise<nav_msgs::Path>("/mpc_minco_path", 10);
+
     // err_pub = nh.advertise<std_msgs::Float64>("/tracker_err", 10);
     if(sim == 0){
         vel_sub_ = nh.subscribe("vel", 1, &MPC::revVelCallBack, this);
@@ -55,6 +59,66 @@ void MPC::init(ros::NodeHandle &nh)
         trigger_sub_ = nh.subscribe("/move_base_simple/goal", 1, &MPC::rcvTriggerCallBack, this);
     }
 }
+
+
+void MPC::publishPath(const std::vector<TrajPoint>& ref_points)
+{
+    nav_msgs::Path path_msg;
+    path_msg.header.stamp = ros::Time::now();
+    path_msg.header.frame_id = "map";
+
+    for (int i = 0; i < 10; i++)
+    {
+        geometry_msgs::PoseStamped pose;
+        pose.header = path_msg.header;
+        pose.pose.position.x = i * 0.1;
+        pose.pose.position.y = i * 0.2;
+        pose.pose.position.z = 0.0;
+
+        path_msg.poses.push_back(pose);
+    }
+
+    path_pub_.publish(path_msg);
+}
+
+
+// void MPC::checkTrajStartConsistency()
+// {
+//     if (!has_odom) {
+//         ROS_WARN("[MPC] No odom available yet, cannot check trajectory start consistency.");
+//         return;
+//     }
+
+//     // 轨迹起点（t=0）
+//     Eigen::Vector3d traj_start_pos = traj_analyzer.minco_traj.getPos(0.0);
+//     Eigen::Vector3d traj_start_vel = traj_analyzer.minco_traj.getVel(0.0);
+
+//     double traj_yaw = atan2(traj_start_vel[1], traj_start_vel[0]);
+//     double state_yaw = now_state.theta;
+
+//     // 位置误差
+//     double pos_err = hypot(traj_start_pos[0] - now_state.x,
+//                            traj_start_pos[1] - now_state.y);
+
+//     // 速度大小误差
+//     double vel_err = traj_start_vel.head<2>().norm() - now_state.v;
+
+//     // 航向角误差
+//     double yaw_err = traj_yaw - state_yaw;
+//     while (yaw_err > M_PI) yaw_err -= 2*M_PI;
+//     while (yaw_err < -M_PI) yaw_err += 2*M_PI;
+
+//     if (fabs(pos_err) > 0.2 || fabs(vel_err) > 0.2 || fabs(yaw_err) > 0.3) {
+//         ROS_WARN("[MPC] Trajectory start and current state mismatch! "
+//                  "pos_err=%.2f m, vel_err=%.2f m/s, yaw_err=%.2f rad",
+//                  pos_err, vel_err, yaw_err);
+//     } else {
+//         ROS_INFO("[MPC] Trajectory start is consistent with current state.");
+//     }
+// }
+
+
+
 
 void MPC::rcvTriggerCallBack(const geometry_msgs::PoseStamped msg)
 {
@@ -71,8 +135,9 @@ void MPC::rcvTrajCallBack(mpc::PolynomeConstPtr msg)
     traj_analyzer.setTraj(msg);
 }
 
-void MPC::rcvOdomCallBack(nav_msgs::OdometryPtr msg)
+void MPC::rcvOdomCallBack2(nav_msgs::OdometryPtr msg)
 {   
+    //------zhe ge shi zhiqian de 
     double current_x = msg->pose.pose.position.x;
     double current_y = msg->pose.pose.position.y;
 
@@ -138,7 +203,7 @@ void MPC::rcvOdomCallBack(nav_msgs::OdometryPtr msg)
     // std::cout << "lvel.norm() = " << lvel.norm() <<std::endl;
     // now_state.theta = msg->twist.twist.linear.z;
     double ff = calcuEuler(msg->pose.pose.orientation.w, msg->pose.pose.orientation.x, msg->pose.pose.orientation.y, msg->pose.pose.orientation.z);
-    // std::cout << "now_state.theta= " << now_state.theta << " --  ff= " << now_state.theta << endl;
+    std::cout << "now_state.theta= " << now_state.theta << " --  ff= " << now_state.theta << endl;
     // if(sim==1){
     //     now_state.v = lvel.norm();
     //     // std::cout << "the robot quaterniond = " << q << endl;
@@ -160,6 +225,47 @@ void MPC::rcvOdomCallBack(nav_msgs::OdometryPtr msg)
     //     std::cout << "zitai he sudu chai tai duo le " <<endl;
     // }
 }
+
+void MPC::rcvOdomCallBack(nav_msgs::OdometryPtr msg)
+{
+    has_odom = true;
+
+    // 位置
+    now_state.x = msg->pose.pose.position.x;
+    now_state.y = msg->pose.pose.position.y;
+
+    // 朝向（yaw）
+    Eigen::Quaterniond q(msg->pose.pose.orientation.w,
+                         msg->pose.pose.orientation.x,
+                         msg->pose.pose.orientation.y,
+                         msg->pose.pose.orientation.z);
+    Eigen::Matrix3d R(q);
+    now_state.theta = atan2(R.col(0)[1], R.col(0)[0]);
+
+    // 线速度（世界坐标系下）
+    double vx = msg->twist.twist.linear.x;
+    double vy = msg->twist.twist.linear.y;
+    Eigen::Vector2d lvel(vx, vy);
+
+    // 投影到机器人朝向，得到前进/后退速度
+    double direction = atan2(lvel(1), lvel(0));
+    double angle_diff = direction - now_state.theta;
+    angle_diff = fmod(angle_diff + M_PI, 2*M_PI) - M_PI;
+
+    double speed_norm = lvel.norm();
+    now_state.v = (fabs(angle_diff) < M_PI_2) ? speed_norm : -speed_norm;
+
+    // 如果你不需要区分正反，可以直接：
+    // now_state.v = speed_norm;
+
+    // // 角速度（绕Z轴）
+    // now_state.omega = msg->twist.twist.angular.z;
+
+    // Debug
+    ROS_INFO("Odom: pos=(%.2f, %.2f), v=%.2f, yaw=%.2f rad",
+             now_state.x, now_state.y, now_state.v, now_state.theta);
+}
+
 
 //bu dong zhe li cheng 0.0935
 void MPC::revVelCallBack(diablo_sdk::OSDK_LEGMOTORSConstPtr msg){
@@ -248,6 +354,7 @@ void MPC::cmdCallback(const ros::TimerEvent &e)
     else
     {
         vector<TrajPoint> P = traj_analyzer.getRefPoints(T, dt);
+        publishPath(P);
         if (traj_analyzer.at_goal)
         {
             cmd.speed = 0.0;
@@ -957,6 +1064,7 @@ void MPC::getCmd(void)
     if (control_a)
     {
         cmd.speed = now_state.v + dt * output(0, 0);
+        //cmd.omega = now_state. + dt * output(1, 0);
     }
     else
         cmd.speed = output(0, 0);

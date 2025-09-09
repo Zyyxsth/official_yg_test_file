@@ -39,7 +39,7 @@ public:
         // sub_movement_cmd = this->create_subscription<motion_msgs::msg::MotionCtrl>("diablo/MotionCmd", 10, std::bind(&diabloCtrlNode::Motion_callback, this, std::placeholders::_1));
         // ctrl_msg_.value.up = 1.0;
         sub_movement_cmd = n_.subscribe<motion_msgs::MotionCtrl>("diablo/MotionCmd", 10, std::bind(&diabloCtrlNode::Motion_callback, this, std::placeholders::_1));
-        ctrl_msg_.value.up = 1.0;
+        ctrl_msg_.value.up = 0.7;
     }
     ~diabloCtrlNode();
 

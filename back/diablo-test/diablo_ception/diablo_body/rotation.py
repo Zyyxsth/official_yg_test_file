@@ -39,7 +39,7 @@ def generMsgs(forward=None, left=None, roll=None, up=None,
 
 def callback(data):
     global teleop_cmd
-    ctrlMsgs = generMsgs(forward=data.speed, left=data.omega, up=1.0)
+    ctrlMsgs = generMsgs(forward=data.speed, left=data.omega, up=0.7)
     teleop_cmd.publish(ctrlMsgs)
 
 

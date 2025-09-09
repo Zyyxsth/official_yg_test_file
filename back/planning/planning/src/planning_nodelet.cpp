@@ -323,6 +323,9 @@ class Nodelet : public nodelet::Nodelet {
     poly.init_v.z = traj.getVel(0)[2];
     poly.init_a.x = traj.getAcc(0)[0];
     poly.init_a.y = traj.getAcc(0)[1];
+
+    // poly.init_a.x = 0;
+    // poly.init_a.y = 0;
     poly.init_a.z = traj.getAcc(0)[2];
 
     poly.start_time = ros::Time::now();
@@ -775,7 +778,7 @@ void publishNextGoal_txt(){
 
             //-----------zhishi changshi yixia -------------
 
-            if (planar_error > 0.9) {
+            if (delta.norm() > 0.9) {
               std::cout << "----------now delta -----" << planar_error << std::endl;
               exec_state_ = REPLAN_TRAJ;
             }

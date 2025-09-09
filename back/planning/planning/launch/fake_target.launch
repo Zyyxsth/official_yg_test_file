@@ -2,7 +2,7 @@
 
 <!--参数们-->
   <!-- <arg name="odom_topic" default="/new_odom"/> -->
-  <arg name="odom_topic" default="/Robot_base_odom"/>
+  <arg name="odom_topic" default="/ekf/ekf_odom"/>
 
   <group ns="target">
 
@@ -15,7 +15,7 @@
       <rosparam file="$(find uav_simulator)/config/mockamap.yaml"/>
       <!-- remap topics -->
       <remap from="~global_map" to="/global_map"/>
-      <remap from="~odom" to= "/Robot_base_odom" />
+      <remap from="~odom" to= "/ekf/ekf_odom" />
       <remap from="~aaa_local_map" to= "/Robot_base_cloud"/>
       <param name="local_margin" value="2.0"/>
       <remap from="~gridmap" to="gridmap"/>
@@ -34,12 +34,12 @@
       <!-- <remap from= "~fake_local_map" to= "/body_cloud"/> -->
     </node>
     <node pkg="odom_visualization" name="odom_visualization" type="odom_visualization" output="screen">
-      <remap from="~odom" to="/Robot_base_odom" />
+      <remap from="~odom" to="/ekf/ekf_odom" />
       <param name="robot_scale" value="0.7"/>
     </node>
 
     <node pkg="nodelet" type="nodelet" name="planning" args="load planning/Nodelet manager" output="screen">
-      <remap from="~odom" to="/Robot_base_odom"/>
+      <remap from="~odom" to="/ekf/ekf_odom"/>
       <remap from="~gridmap_inflate" to="gridmap_inflate"/>
       <remap from="~heartbeat" to="heartbeat"/>
       <remap from="~trajectory" to="trajectory"/>
@@ -57,7 +57,7 @@
 
       <param name="K" value="8"/>
       <param name="vmax" value="0.5"/><!--0.8/1(success1)   1.5   0.6  0.4-->
-      <param name="amax" value="1.0"/><!--1.8/2   2.5   1.8  0.8-->
+      <param name="amax" value="0.4"/><!--1.8/2   2.5   1.8  0.8-->
       <param name="rhoT" value="100.0"/>
       <param name="rhoP" value="10000.0"/>
       <param name="rhoV" value="1000.0"/>

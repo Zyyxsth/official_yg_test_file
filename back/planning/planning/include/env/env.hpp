@@ -291,14 +291,14 @@ class Env {
 
     // 重新生成hPoly矩阵（包含新增的天花板约束
     // --------- 新增：添加固定高度约束 ----------
-    // double z_low  = astar_fixed_height_ - corridor_height_margin_;
-    // double z_high = astar_fixed_height_ + corridor_height_margin_;
+    double z_low  = astar_fixed_height_ - corridor_height_margin_;
+    double z_high = astar_fixed_height_ + corridor_height_margin_;
 
-    // Hyperplane3D floor_plane(Eigen::Vector3d(0, 0, -1),  Eigen::Vector3d(0, 0, z_low));   // z >= z_low
-    // Hyperplane3D ceil_plane (Eigen::Vector3d(0, 0, 1), Eigen::Vector3d(0, 0, z_high)); // z <= z_high
+    Hyperplane3D floor_plane(Eigen::Vector3d(0, 0, -1),  Eigen::Vector3d(0, 0, z_low));   // z >= z_low
+    Hyperplane3D ceil_plane (Eigen::Vector3d(0, 0, 1), Eigen::Vector3d(0, 0, z_high)); // z <= z_high
 
-    // current_hyperplanes.push_back(floor_plane);
-    // current_hyperplanes.push_back(ceil_plane);
+    current_hyperplanes.push_back(floor_plane);
+    current_hyperplanes.push_back(ceil_plane);
 
 
 
@@ -364,14 +364,14 @@ class Env {
       // Eigen::Vector3d(0, 0, virtual_ceiling_height_));
       // current_hyperplanes.push_back(ceiling_hyperplane);
       // // --------- 新增：添加固定高度约束 ----------
-      // double z_low  = astar_fixed_height_ - corridor_height_margin_;
-      // double z_high = astar_fixed_height_ + corridor_height_margin_;
+      double z_low  = astar_fixed_height_ - corridor_height_margin_;
+      double z_high = astar_fixed_height_ + corridor_height_margin_;
 
-      // Hyperplane3D floor_plane(Eigen::Vector3d(0, 0, -1),  Eigen::Vector3d(0, 0, z_low));
-      // Hyperplane3D ceil_plane (Eigen::Vector3d(0, 0, 1), Eigen::Vector3d(0, 0, z_high));
+      Hyperplane3D floor_plane(Eigen::Vector3d(0, 0, -1),  Eigen::Vector3d(0, 0, z_low));
+      Hyperplane3D ceil_plane (Eigen::Vector3d(0, 0, 1), Eigen::Vector3d(0, 0, z_high));
 
-      // current_hyperplanes.push_back(floor_plane);
-      // current_hyperplanes.push_back(ceil_plane);
+      current_hyperplanes.push_back(floor_plane);
+      current_hyperplanes.push_back(ceil_plane);
 
       //  // ⚠️ 关键：重新构造 poly
       //  Polyhedron3D bounded_poly(current_hyperplanes);

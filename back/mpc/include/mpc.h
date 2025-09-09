@@ -39,6 +39,8 @@ class MPC
 private:
     // parameters
     /// algorithm param
+    ros::Publisher path_pub_;
+
     double du_th = 0.1;
     double dt = 0.2;
     int T = 5;
@@ -93,14 +95,19 @@ private:
     diablo_sdk::Diablo_Ctrl cmd;
     void cmdCallback(const ros::TimerEvent &e);
     void rcvOdomCallBack(nav_msgs::OdometryPtr msg);
+    void rcvOdomCallBack2(nav_msgs::OdometryPtr msg);
     void rcvTrajCallBack(mpc::PolynomeConstPtr msg);
     void rcvTriggerCallBack(const geometry_msgs::PoseStamped msg);
+    void publishPath(const std::vector<TrajPoint>& ref_points);
+
+    void checkTrajStartConsistency();
 
     // for test tracking performance
     bool in_test;
     cubic_spline_planner csp;
     string test_traj;
     vector<Eigen::Vector3d> csp_path;
+    ros::Publisher path_pub;
 
     // MPC function
     void getLinearModel(const MPCState& s);
