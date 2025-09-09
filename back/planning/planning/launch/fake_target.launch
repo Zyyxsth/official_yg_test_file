@@ -1,0 +1,161 @@
+<launch>
+
+<!--参数们-->
+  <!-- <arg name="odom_topic" default="/new_odom"/> -->
+  <arg name="odom_topic" default="/ekf/ekf_odom"/>
+
+  <group ns="target">
+
+    <node pkg="nodelet" type="nodelet" name="manager" args="manager" output="screen">
+      <param name="num_worker_threads" value="16"/>
+    </node>
+
+    <node pkg="nodelet" type="nodelet" name="mapping" args="load mapping/Nodelet manager" output="screen">
+      <!-- global map parameters -->
+      <rosparam file="$(find uav_simulator)/config/mockamap.yaml"/>
+      <!-- remap topics -->
+      <remap from="~global_map" to="/global_map"/>
+      <remap from="~odom" to= "/ekf/ekf_odom" />
+      <remap from="~aaa_local_map" to= "/Robot_base_cloud"/>
+      <param name="local_margin" value="2.0"/>
+      <remap from="~gridmap" to="gridmap"/>
+      <remap from="~gridmap_inflate" to="gridmap_inflate"/>
+      <!-- mapping parameters -->
+      <param name="resolution" value="0.10"/>  
+      <param name="inflate_size" value="1.2"/>
+      <param name="use_global_map" value="true"/>
+      <!-- raycasting parameters -->
+      <param name="p_min" value="-199"/>
+      <param name="p_max" value=" 220"/>
+      <param name="p_hit" value="  62"/>
+      <param name="p_mis" value="  62"/>
+      <param name="p_occ" value=" 139"/>
+      <param name="p_def" value="-199"/>
+      <!-- <remap from= "~fake_local_map" to= "/body_cloud"/> -->
+    </node>
+    <node pkg="odom_visualization" name="odom_visualization" type="odom_visualization" output="screen">
+      <remap from="~odom" to="/ekf/ekf_odom" />
+      <param name="robot_scale" value="0.7"/>
+    </node>
+
+    <node pkg="nodelet" type="nodelet" name="planning" args="load planning/Nodelet manager" output="screen">
+      <remap from="~odom" to="/ekf/ekf_odom"/>
+      <remap from="~gridmap_inflate" to="gridmap_inflate"/>
+      <remap from="~heartbeat" to="heartbeat"/>
+      <remap from="~trajectory" to="trajectory"/>
+      <remap from="~replanState" to="replanState"/>
+      <!--避免和rviz的冲突，goal2是convert_pipe发出来的世界目标点，要换回来的话去掉2即可-->
+      <remap from="~triger" to="/move_base_simple/goal"/>
+      <!-- <remap from="~target" to="/move_base_simple/goal_"/> -->
+      <!--0.1.1增加重规划的话题映射-->
+      <remap from="~last_traj_t_rest_topic" to="last_traj_t_rest_topic"/>
+
+      <param name="plan_hz" value="20"/>
+      <param name="virtual_ceiling_height" value="0.3"/>
+      <param name="astar_fixed_height" value="-0.2" />
+      <param name="corridor_height_margin" value="0.4"/>
+
+      <param name="K" value="8"/>
+      <param name="vmax" value="0.5"/><!--0.8/1(success1)   1.5   0.6  0.4-->
+      <param name="amax" value="0.4"/><!--1.8/2   2.5   1.8  0.8-->
+      <param name="rhoT" value="100.0"/>
+      <param name="rhoP" value="10000.0"/>
+      <param name="rhoV" value="1000.0"/>
+      <param name="rhoA" value="1000.0"/>
+      <param name="clearance_d" value="0.2"/>
+      <param name="tolerance_d" value="0.0"/>  
+      <!-- 0.5  0.05  0.1-->
+      <!-- <param name="tracking_dist" value="0.15"/>   -->
+      <param name="tracking_dist" value="0.15"/>  
+      <!-- 1.0 -->
+      <param name="debug" value="false"/>
+      <!-- false -->
+      <param name="fake" value="true"/>
+      <param name="detect_sim" value="true"/>
+
+    </node>
+
+    
+
+    <!--去掉飞机的跟踪控制-->
+    <!-- <node pkg="planning" name="traj_server" type="traj_server" output="screen">
+      <remap from="~position_cmd" to="position_cmd"/>
+      <remap from="~trajectory" to="trajectory"/>
+      <remap from="~heartbeat" to="heartbeat"/>
+      <param name="time_forward" value="1.0" type="double"/>
+    </node> -->
+
+    <!--小车控制(弃)-->
+    <!-- <node pkg="planning" name="publish_cmd" type="publish_cmd" output="screen">
+      <remap from="~position_cmd" to="position_cmd"/>
+      <remap from="~trajectory" to="trajectory"/>
+      <remap from="~heartbeat" to="heartbeat"/>
+      <param name="time_forward" value="1.0" type="double"/>
+    </node> -->
+
+    <!--小车控制(弃)-->
+    <!-- <node pkg="planning" name="control_ugv" type="control_ugv" output="screen">
+      <remap from="~position_cmd" to="position_cmd"/>
+      <remap from="~trajectory" to="trajectory"/>
+      <remap from="~odometry" to="/new_odom"/> 
+      <remap from="~point/vis" to="/diablo_vis_p" />
+
+      <param name="kp_yaw" value="0.75" type="double"/>
+      <param name="ki_yaw" value="0.045" type="double"/>
+
+      <param name="kp_pos" value="2.95" type="double"/>
+      <param name="ki_pos" value="0.2" type="double"/>
+      <param name="kd_pos" value="0.2" type="double"/>
+      < 0.8/0.07  2.3/0.2/0.2 第二个弯不可以，但目前效果最好了——918 19：26>
+
+      <param name="time_forward" value="1.0" type="double"/> 
+    </node> -->
+
+
+
+
+    <!--小车仿真-->
+    <!--/target/control_ugv/cmd_dia-->
+    <!--shi ji zhu shi-->
+		<!-- <node pkg="kimatic_simulator" type="kimatic_simulator_node" name="kimatic_simulator_node" output="screen" required="true">
+			 <remap from ="~command" to="/target/control_ugv/cmd_dia"/> 
+			<param name="simulator/max_omega" value="2.4" type="double"/>
+			<param name="simulator/max_speed" value="5.0" type="double"/>
+			<remap from="~odometry" to="/new_odom"/>
+		</node> -->
+
+  </group>
+
+
+
+
+    <arg name="traj_topic" value="/target/planning/mpc_traj" />
+    <!-- <arg name="cmd_topic" value="car/ackermann_cmd" /> -->
+    <arg name="cmd_topic" value="/target/control_ugv/cmd_dia" />
+    <arg name="vel" value=""/>
+
+    <rosparam command="load" file="$(find mpc)/config/param.yaml" />
+
+    <node pkg="mpc" name="mpc_controller_node" type="mpc_controller_node" output="screen">
+      <remap from="cmd" to="$(arg cmd_topic)"/>
+      <!-- <param name="mpc/du_threshold" value="0.1" type="double"/>
+      <param name="mpc/dt" value="0.01" type="double"/>
+      <param name="mpc/max_iter" value="3"  type="int"/>
+      <param name="mpc/predict_steps" value="120"  type="int" unless="$(arg control_a)"/>
+      <param name="mpc/predict_steps" value="100"  type="int" if="$(arg control_a)"/>
+      <param name="mpc/max_omega" value="2.4"  type="double"/>
+      <param name="mpc/max_domega" value="1.0"  type="double"/>
+      <param name="mpc/max_speed" value="1.5"  type="double"/>
+      <param name="mpc/max_accel" value="0.5"  type="double"/>
+      <param name="mpc/tolerance" value="0.1"  type="double"/>
+      <param name="mpc/in_test" value="$(arg in_test)"  type="bool"/>
+      <param name="mpc/control_a" value="$(arg control_a)"  type="bool"/> -->
+      <remap from="odom" to="$(arg odom_topic)"/>
+      <remap from="traj" to="$(arg traj_topic)"/>
+    </node>
+<!--添加小车控制-->
+
+<!-- <node name="rviz" pkg="rviz" type="rviz" args="-d $(find mapping)/config/rviz_sim.rviz">
+    </node> -->
+  
+</launch>

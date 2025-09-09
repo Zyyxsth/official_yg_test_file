@@ -1,0 +1,51 @@
+void clearLocalMap(const nav_msgs::OdometryConstPtr& odom_msg, const sensor_msgs::PointCloud2ConstPtr& cloud_msg) {
+    if (callback_lock_.test_and_set()) {
+        return;
+    }
+
+    Eigen::Vector3d body_p(odom_msg->pose.pose.position.x,
+                           odom_msg->pose.pose.position.y,
+                           odom_msg->pose.pose.position.z);
+    Eigen::Quaterniond body_q(
+        odom_msg->pose.pose.orientation.w, odom_msg->pose.pose.orientation.x,
+        odom_msg->pose.pose.orientation.y, odom_msg->pose.pose.orientation.z);
+    Eigen::Vector3d cam_p = body_q.toRotationMatrix() * cam2body_p_ + body_p;
+
+    // 设定局部地图的范围
+    const int local_margin = 5; // 可以根据实际情况调整
+    Eigen::Vector3i min_id = gridmap_.pos2idx(cam_p - Eigen::Vector3d(local_margin, local_margin, local_margin));
+    Eigen::Vector3i max_id = gridmap_.pos2idx(cam_p + Eigen::Vector3d(local_margin, local_margin, local_margin));
+
+    // 清除局部地图信息
+    for (int x = min_id.x(); x <= max_id.x(); ++x) {
+        for (int y = min_id.y(); y <= max_id.y(); ++y) {
+            for (int z = min_id.z(); z <= max_id.z(); ++z) {
+                Eigen::Vector3i id(x, y, z);
+                if (gridmap_.isInMap(id)) {
+                    gridmap_.setFree(id);
+                }
+            }
+        }
+    }
+
+    // 处理雷达感知到的局部点云信息
+    pcl::PointCloud<pcl::PointXYZ> point_cloud;
+    pcl::fromROSMsg(*cloud_msg, point_cloud);
+    std::vector<Eigen::Vector3d> obs_pts;
+    for (const auto& pt : point_cloud) {
+        Eigen::Vector3d p(pt.x, pt.y, pt.z);
+        obs_pts.push_back(p);
+    }
+
+    // 更新地图
+    gridmap_.updateMap(cam_p, obs_pts);
+
+    // 发布更新后的地图
+    quadrotor_msgs::OccMap3d gridmap_msg;
+    gridmap_msg.header.frame_id = "world";
+    gridmap_msg.header.stamp = ros::Time::now();
+    gridmap_.to_msg(gridmap_msg);
+    gridmap_inflate_pub_.publish(gridmap_msg);
+
+    callback_lock_.clear();
+}

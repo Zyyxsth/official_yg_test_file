@@ -1,0 +1,108 @@
+<launch>
+
+  <!-- ===================== 公共参数 ===================== -->
+  <!-- 里程计话题：保持和 MPC、可视化一致 -->
+  <arg name="odom_topic" default="/Robot_base_odom"/>
+
+  <!-- MPC 订阅的轨迹话题（simple_traj_publisher 也会往这里发） -->
+  <arg name="traj_topic" default="/target/planning/mpc_traj" />
+
+  <!-- 车辆控制话题（保持你原来的） -->
+  <arg name="cmd_topic"  default="/target/control_ugv/cmd_dia" />
+
+  <!-- 是否从 RViz 的 /move_base_simple/goal 取目标（true 时忽略 goal_x/y/z） -->
+  <arg name="use_goal_topic" default="false"/>
+  <arg name="goal_x" default="4.0"/>
+  <arg name="goal_y" default="0.0"/>
+  <arg name="goal_z" default="0.2"/>
+
+  <!-- SFC 走廊高度与 MPC 起步延迟（按需微调） -->
+  <arg name="corridor_height" default="2.0"/>
+  <arg name="start_delay"     default="0.10"/>
+
+  <!-- ===================== 命名空间 ===================== -->
+  <group ns="target">
+
+    <!-- ========== nodelet 管理器（保留） ========== -->
+    <node pkg="nodelet" type="nodelet" name="manager" args="manager" output="screen">
+      <param name="num_worker_threads" value="16"/>
+    </node>
+
+    <!-- ========== 地图构建/占据栅格（保留） ========== -->
+    <node pkg="nodelet" type="nodelet" name="mapping" args="load mapping/Nodelet manager" output="screen">
+      <!-- 全局地图配置 -->
+      <rosparam file="$(find uav_simulator)/config/mockamap.yaml"/>
+
+      <!-- 话题重映射 -->
+      <remap from="~global_map"       to="/global_map"/>
+      <remap from="~odom"             to="$(arg odom_topic)"/>
+      <remap from="~aaa_local_map"    to="/Robot_base_cloud"/>
+      <remap from="~gridmap"          to="gridmap"/>
+      <remap from="~gridmap_inflate"  to="gridmap_inflate"/>
+
+      <!-- mapping 参数（原样保留） -->
+      <param name="local_margin" value="2.0"/>
+      <param name="resolution"   value="0.10"/>
+      <param name="inflate_size" value="0.6"/>
+      <param name="use_global_map" value="true"/>
+
+      <!-- raycasting 参数（原样保留） -->
+      <param name="p_min" value="-199"/>
+      <param name="p_max" value=" 220"/>
+      <param name="p_hit" value="  62"/>
+      <param name="p_mis" value="  62"/>
+      <param name="p_occ" value=" 139"/>
+      <param name="p_def" value="-199"/>
+    </node>
+
+    <!-- ========== 里程计可视化（保留） ========== -->
+    <node pkg="odom_visualization" name="odom_visualization" type="odom_visualization" output="screen">
+      <remap from="~odom" to="$(arg odom_topic)"/>
+      <param name="robot_scale" value="0.7"/>
+    </node>
+
+    <!-- ========== 一次性轨迹发布器（新增） ========== -->
+    <!-- 说明：
+         1) 它会订阅 odom 与 gridmap_inflate，按 A*→SFC→优化 生成一条轨迹；
+         2) 仅发布一次到 /target/planning/mpc_traj（latched），方便 MPC 取用；
+         3) 同时会在 mpc_traj_vis 画折线可视化。 -->
+    <node pkg="planning" type="simple_traj_publisher" name="simple_traj_publisher" output="screen">
+      <param name="odom_topic"     value="$(arg odom_topic)"/>
+      <param name="gridmap_topic"  value="gridmap_inflate"/>
+      <param name="traj_topic"     value="$(arg traj_topic)"/>
+      <param name="frame_id"       value="world"/>
+
+      <param name="use_goal_topic" value="$(arg use_goal_topic)"/>
+      <param name="goal_x"         value="$(arg goal_x)"/>
+      <param name="goal_y"         value="$(arg goal_y)"/>
+      <param name="goal_z"         value="$(arg goal_z)"/>
+
+      <param name="corridor_height" value="$(arg corridor_height)"/>
+      <param name="start_delay"     value="$(arg start_delay)"/>
+    </node>
+
+    <!-- ========== 原来的 planning/Nodelet（禁用，避免和测试轨迹抢话题） ========== -->
+    <!--
+    <node pkg="nodelet" type="nodelet" name="planning" args="load planning/Nodelet manager" output="screen">
+      ...（整段注释掉）...
+    </node>
+    -->
+
+  </group>
+
+  <!-- ===================== MPC 控制器（保留） ===================== -->
+
+  <!-- MPC 参数（你原来就有） -->
+  <rosparam command="load" file="$(find mpc)/config/param.yaml" />
+
+  <node pkg="mpc" name="mpc_controller_node" type="mpc_controller_node" output="screen">
+    <remap from="cmd"  to="$(arg cmd_topic)"/>
+    <remap from="odom" to="$(arg odom_topic)"/>
+    <remap from="traj" to="$(arg traj_topic)"/>
+  </node>
+
+  <!-- 如需 RViz：
+  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find mapping)/config/rviz_sim.rviz"/>
+  -->
+
+</launch>
