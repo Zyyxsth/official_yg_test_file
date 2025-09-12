@@ -1,1 +1,3 @@
 # official_yg_test_file
+现在要判断一个问题：它矫正的odom到底是new_odom还是robot_base_odom呢？
+以及为什么最后没有回到原点，而是在中间停了呢？
